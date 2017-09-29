@@ -9,8 +9,8 @@ class ConnectionProvider(object):
         self._server_port = server_port
         self._client_port = client_port
         self._buffer_size = 1024;
-        self._socket_connected = None
-        self._connection_activated = False
+        self._connected_socket = None
+        self._function = None
 
     def set_client_port(self, port):
         self._client_port = port
@@ -21,30 +21,24 @@ class ConnectionProvider(object):
     def set_destination_ip(self, ip):
         self._destination_ip = ip
 
-    def get_socket_connected(self):
-        return self._socket_connected
+    def get_connected_socket(self):
+        return self._connected_socket
 
+    def set_function_when_receive_message(self, function):
+        self._function = function
+
+    def check_connection(self):
+        if not self._connected_socket:
+            return False
+
+        #TODO: Improve this function, very simple
+
+        return True
 
     def start_server_mode(self):
-        if not hasattr(self, '_server_socket'):
-            self._server_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-            self._server_socket.bind(('', self._server_port))
-            self._server_socket.listen(1)
-
-            conn, addr = self._server_socket.accept()
-
-            self._connection_activated = True
-
-            self._socket_connected = conn
-            self._destination_ip, self._client_port = addr
-
-            print('Connection Stablished with ' + self._destination_ip)
-
-            self._server_socket.close()
-
-            t = threading.Thread(target = self._waiting_for_the_data)
-            t.daemon = True
-            t.start()
+        t = threading.Thread(target = self._waiting_for_connection)
+        t.daemon = True
+        t.start()
 
     def start_connection(self):
         if not hasattr(self, '_client_socket'):
@@ -52,29 +46,64 @@ class ConnectionProvider(object):
             
             self._client_socket.bind(('', self._client_port))
 
-            self._client_socket.connect((self._destination_ip, self._server_port))
-            self._socket_connected = self._client_socket
-            self._connection_activated = True
+            try:
+                self._client_socket.connect((self._destination_ip, self._server_port))
+                self._connected_socket = self._client_socket
+                self._waiting_for_the_data()
+            except Exception:
+                self._client_socket.close()
+                self._connected_socket = None
+                return False
 
-            t = threading.Thread(target = self._waiting_for_the_data)
-            t.daemon = True
-            t.start()
+            return True
+
+        return False
 
     def send_message(self, message):
-        if self._connection_activated:
-            if type(message) == str:
-                message = message.encode()
+        if not self._connected_socket:
+            return False
 
-            self._socket_connected.sendall(message)
+        if type(message) == bytes:
+            message = message.decode()
+
+        if type(message) == str:
+            message = "message:"+message
+            message = message.encode()
+
+        self._connected_socket.sendall(message)
 
     def close_connection(self):
         if self._connection_activated:
             self._connection_activated = False
-            self._socket_connected.close()
+            self._connected_socket.close()
+
+    def _waiting_for_connection(self):
+        if not hasattr(self, '_server_socket'):
+            self._server_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+            self._server_socket.bind(('', self._server_port))
+            self._server_socket.listen(1)
+
+            conn, addr = self._server_socket.accept()
+
+            self._connected_socket = conn
+            self._destination_ip, self._client_port = addr
+
+            self._server_socket.close()
+
+            self._waiting_for_the_data()
 
     def _waiting_for_the_data(self):
-        while self._connection_activated:
-            data = self._socket_connected.recv(self._buffer_size)
+        t = threading.Thread(target = self._waiting_for_the_data_function, args=(self._function))
+        t.daemon = True
+        t.start()
+
+    def _waiting_for_the_data_function(self):
+        while self._connected_socket:
+            data = self._connected_socket.recv(self._buffer_size)
+
             if not data:
-                break
-            print("received data:"+data.decode())
+                self._connected_socket = None
+                return
+
+            if self._function:
+                self._function("received data:"+data.decode())
