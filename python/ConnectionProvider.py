@@ -10,7 +10,7 @@ class ConnectionProvider(object):
         self._client_port = client_port
         self._buffer_size = 1024;
         self._connected_socket = None
-        self._function = None
+        self._function = print
 
     def set_client_port(self, port):
         self._client_port = port
@@ -93,7 +93,7 @@ class ConnectionProvider(object):
             self._waiting_for_the_data()
 
     def _waiting_for_the_data(self):
-        t = threading.Thread(target = self._waiting_for_the_data_function, args=(self._function))
+        t = threading.Thread(target = self._waiting_for_the_data_function)
         t.daemon = True
         t.start()
 
