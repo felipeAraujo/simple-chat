@@ -1,7 +1,9 @@
 # -*- coding: UTF-8 -*-
 
 import socket
-import threading;
+import threading
+
+import SystemHelpers
 
 class ConnectionProvider(object):
     def __init__(self, destination_ip = '', server_port=20001, client_port = 20002):
@@ -10,7 +12,8 @@ class ConnectionProvider(object):
         self._client_port = client_port
         self._buffer_size = 1024;
         self._connected_socket = None
-        self._function = print
+        self._function_when_receive_message = print
+        self._function_to_alert_user = print
 
     def set_client_port(self, port):
         self._client_port = port
@@ -25,13 +28,14 @@ class ConnectionProvider(object):
         return self._connected_socket
 
     def set_function_when_receive_message(self, function):
-        self._function = function
+        self._function_when_receive_message = function
 
-    def check_connection(self):
+    def set_function_to_alert_user(self, function):
+        self._function_to_alert_user = function
+
+    def connected(self):
         if not self._connected_socket:
             return False
-
-        #TODO: Improve this function, very simple
 
         return True
 
@@ -41,21 +45,31 @@ class ConnectionProvider(object):
         t.start()
 
     def start_connection(self):
-        if not hasattr(self, '_client_socket'):
+        if (not hasattr(self, '_client_socket')) or (not self.connected()) :
             self._client_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
             
             self._client_socket.bind(('', self._client_port))
+
+            connection_stablished = True
 
             try:
                 self._client_socket.connect((self._destination_ip, self._server_port))
                 self._connected_socket = self._client_socket
                 self._waiting_for_the_data()
-            except Exception:
+            except ConnectionRefusedError:
+                connection_stablished = False
+                message = 'Connection Refused at ' + self._destination_ip +\
+                    ':' + str(self._server_port)
+                SystemHelpers.log_debug(message)
+                self._function_to_alert_user(message)
+            else:
+                connection_stablished = False
+
+            if not connection_stablished:
                 self._client_socket.close()
                 self._connected_socket = None
-                return False
 
-            return True
+            return connection_stablished
 
         return False
 
@@ -105,5 +119,5 @@ class ConnectionProvider(object):
                 self._connected_socket = None
                 return
 
-            if self._function:
-                self._function("received data:"+data.decode())
+            if self._function_when_receive_message:
+                self._function_when_receive_message("received data:"+data.decode())
