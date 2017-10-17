@@ -47,7 +47,7 @@ class ConnectionProvider(object):
     def start_connection(self):
         if (not hasattr(self, '_client_socket')) or (not self.connected()) :
             self._client_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-            
+
             self._client_socket.bind(('', self._client_port))
 
             connection_stablished = True
@@ -60,10 +60,14 @@ class ConnectionProvider(object):
                 connection_stablished = False
                 message = 'Connection Refused at ' + self._destination_ip +\
                     ':' + str(self._server_port)
-                SystemHelpers.log_debug(message)
-                self._function_to_alert_user(message)
-            else:
+
+                if self._function_to_alert_user:
+                    self._function_to_alert_user(message)
+                SystemHelpers.log_info(message)
+            except Exception as e:
                 connection_stablished = False
+                message = str(e)
+                SystemHelpers.log_debug(message)
 
             if not connection_stablished:
                 self._client_socket.close()

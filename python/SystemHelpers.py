@@ -14,3 +14,6 @@ def log_debug(message):
 
 def log_info(message):
     logging.info(message)
+
+def log_warning(message):
+    logging.warning(message)
