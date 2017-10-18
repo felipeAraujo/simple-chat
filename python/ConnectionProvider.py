@@ -6,12 +6,13 @@ import threading
 import SystemHelpers
 
 class ConnectionProvider(object):
-    def __init__(self, destination_ip = '', server_port=20001, client_port = 20002):
+    def __init__(self, destination_ip = '', server_port=20001, client_port = 20002, timeout=3):
         self._destination_ip = destination_ip
         self._server_port = server_port
         self._client_port = client_port
         self._buffer_size = 1024;
         self._connected_socket = None
+        self._timeout = timeout
         self._function_when_receive_message = print
         self._function_to_alert_user = print
 
@@ -96,19 +97,23 @@ class ConnectionProvider(object):
             self._connected_socket.close()
 
     def _waiting_for_connection(self):
-        if not hasattr(self, '_server_socket'):
+        if (not hasattr(self, '_server_socket')) or (not self.connected()):
             self._server_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
             self._server_socket.bind(('', self._server_port))
             self._server_socket.listen(1)
+            self._server_socket.settimeout(self._timeout)
 
-            conn, addr = self._server_socket.accept()
+            try:
+                conn, addr = self._server_socket.accept()
 
-            self._connected_socket = conn
-            self._destination_ip, self._client_port = addr
+                self._connected_socket = conn
+                self._destination_ip, self._client_port = addr
 
-            self._server_socket.close()
+                self._server_socket.close()
 
-            self._waiting_for_the_data()
+                self._waiting_for_the_data()
+            except socket.timeout:
+                SystemHelpers.log_debug('Timeout when waiting for the data on server mode')
 
     def _waiting_for_the_data(self):
         t = threading.Thread(target = self._waiting_for_the_data_function)
