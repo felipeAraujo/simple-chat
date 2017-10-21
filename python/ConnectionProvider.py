@@ -64,11 +64,11 @@ class ConnectionProvider(object):
 
                 if self._function_to_alert_user:
                     self._function_to_alert_user(message)
+
                 SystemHelpers.log_info(message)
             except Exception as e:
                 connection_stablished = False
-                message = str(e)
-                SystemHelpers.log_debug(message)
+                SystemHelpers.log_generic_exception_debug(e)
 
             if not connection_stablished:
                 self._client_socket.close()
