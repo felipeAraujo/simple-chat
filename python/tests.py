@@ -10,6 +10,8 @@ import SystemHelpers
 class ConnectionTester(unittest.TestCase):
     def setUp(self):
         SystemHelpers.LOG_FILE_DEBUG = 'log_debug_test.txt'
+        SystemHelpers.LOG_FILE_INFO = 'log_file_test.txt'
+        SystemHelpers.LOG_FILE_WARNING = 'log_warning_test.txt'
 
     def test_to_return_false_when_no_connection(self):
         client_side = ConnectionProvider()

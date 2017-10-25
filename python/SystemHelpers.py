@@ -5,26 +5,22 @@ LOG_FILE_INFO ='log_info.txt'
 LOG_FILE_WARNING ='log_warning.txt'
 FORMAT_LOG = '%(asctime)s - %(message)s'
 
-try:
-    logging.basicConfig(format=FORMAT_LOG,filename=LOG_FILE_DEBUG, level=logging.DEBUG)
-    logging.basicConfig(format=FORMAT_LOG, filename=LOG_FILE_INFO, level=logging.INFO)
-    logging.basicConfig(format=FORMAT_LOG, filename=LOG_FILE_WARNING, level=logging.WARNING)
-except:
-    pass
-
 def log_debug(message):
     try:
+        logging.basicConfig(format=FORMAT_LOG,filename=LOG_FILE_DEBUG, level=logging.DEBUG)
         logging.debug(message)
     except:
         pass
-def log_generic_exception_debug(e):
+def log_warning(e):
     try:
-        logging.debug(str(e))
+        logging.basicConfig(format=FORMAT_LOG, filename=LOG_FILE_WARNING, level=logging.WARNING)
+        logging.waning(str(e))
     except:
         pass
 
 def log_info(message):
     try:
+        logging.basicConfig(format=FORMAT_LOG, filename=LOG_FILE_INFO, level=logging.INFO)
         logging.info(message)
     except:
         pass

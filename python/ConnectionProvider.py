@@ -68,7 +68,7 @@ class ConnectionProvider(object):
                 SystemHelpers.log_info(message)
             except Exception as e:
                 connection_stablished = False
-                SystemHelpers.log_generic_exception_debug(e)
+                SystemHelpers.log_debug(e)
 
             if not connection_stablished:
                 self._client_socket.close()
@@ -113,6 +113,7 @@ class ConnectionProvider(object):
 
                 self._waiting_for_the_data()
             except socket.timeout:
+                self._server_socket.close()
                 SystemHelpers.log_debug('Timeout when waiting for the data on server mode')
 
     def _waiting_for_the_data(self):
