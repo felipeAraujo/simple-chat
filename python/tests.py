@@ -3,6 +3,8 @@
 import unittest
 from unittest.mock import patch
 from time import sleep
+import os
+from pathlib import Path
 
 from ConnectionProvider import ConnectionProvider
 import SystemHelpers
@@ -38,10 +40,23 @@ class ConnectionTester(unittest.TestCase):
         )
 
     def test_that_will_have_socket_timedout(self):
-        print(SystemHelpers.LOG_FILE_DEBUG)
+        file_path = Path(SystemHelpers.LOG_FILE_DEBUG)
+
+        if file_path.is_file():
+            os.remove(SystemHelpers.LOG_FILE_DEBUG)
+
         server = ConnectionProvider(timeout=1)
         server.start_server_mode()
-        sleep(1)
+        sleep(3)
+
+        log_file = open(SystemHelpers.LOG_FILE_DEBUG, 'r')
+        line = log_file.read()
+        log_file.close()
+
+        self.assertTrue(
+            'Timeout when waiting for the data on server mode' in line,
+            'The timeout exception wasn\'t handled')
+
 
 
 if __name__ == '__main__':
